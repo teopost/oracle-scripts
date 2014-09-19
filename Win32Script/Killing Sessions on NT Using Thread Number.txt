@@ -1,0 +1,56 @@
+Tip of the Week
+Tip for Week of March 9, 2003
+
+Killing Sessions on NT Using Thread Number 
+
+This tip comes from Loay AbuZaineh, Senior DBA at KnowledgeView, in London, UK. 
+
+Sometimes after killing a session on NT using 
+
+alter system kill session 'sid,serial#'  
+
+the status of the session will be changed to KILLED and it will keep this status for a very long time before it dies.
+
+A faster way to remove it is killing the session thread from NT itself after using the "alter system ..." command. 
+
+First, run the following script to get the killed session thread number: 
+
+
+set pagesize 100
+set linesize 100
+column Program format a20
+SELECT  s.Sid             AS "Sid",
+   s.Serial#              AS "Serial#",
+   p.spid                 AS "ThreadID",
+   s.OSUser               AS "OSUser",
+   s.Program              AS "Program"
+FROM   V$Process p, V$session s
+WHERE  p.addr=s.paddr(+)
+ORDER BY s.Sid
+
+Sample Output: 
+
+Sid Serial# ThreadID OSUser  Program
+--- ------- -------- ------  -------
+...
+10  809     102      User01  Prog.exe
+11  345     333      SeUser  App.exe  
+15  719     422      User01  Prge.exe
+20  345     123      SeUs    Acco.exe  
+            555
+            324
+
+Then use the following command from a command prompt to remove the threads, i.e. killed session: 
+
+"orakill  InstanceName  ThreadNumber"
+
+example 
+ 
+"orakill ORCL 555" 
+
+example 
+
+"orakill ORCL 324" 
+
+
+

@@ -1,0 +1,33 @@
+                    Moving Indexes to a Separate Tablespace
+                         Using A Drop/Add Index Script
+
+                          Stephen Rea <srea@uaex.edu>
+              University of Arkansas Cooperative Extension Service
+
+   NOTE:  USE AT YOUR OWN RISK!   MAKE A FULL BACKUP OF YOUR DATABASE FIRST!
+
+
+   The move_indexes.sql script will handle both the regular and primary key
+   indexes, including those involved in foreign key constraints.  It can move
+   indexes based on index name or table name or owner for a single entity or
+   using a wildcard match.  For example, using %, %, % for the index name,
+   table name, and owner will move all indexes in your database except those
+   owned by SYS, SYSTEM, and SCOTT.  Or, using %, %, FIMS%, all of FIMSMGR
+   and FIMSARC indexes will be moved.
+
+   The indexes tablespace must have already been created and must be of
+   sufficient size to hold all of the indexes you are moving.  The command
+   given below will show you the minimum size you'll need for all indexes.
+   Make it bigger to allow for growth.  Also, the default storage clause for
+   it should probably mirror the DEVELOPMENT tablespace, with pctincrease 1
+   and maxextents 99.
+
+      SQL> select sum(bytes) from dba_extents where segment_type = 'INDEX'
+        2> and tablespace_name = 'DEVELOPMENT'
+        3> and owner not in ('SYS','SYSTEM','SCOTT');
+
+   The script took about 15 minutes to perform the moves in our case.
+   After generating the SQL, it will list it out and ask you if you want
+   to run that SQL.  Be sure you have a current backup before running that
+   SQL, just in case something goes wrong and you have to restore!  The
+   move_indexes.sql script must be run from user System.

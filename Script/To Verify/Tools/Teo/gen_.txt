@@ -1,0 +1,38 @@
+README for MNTCONS.EXE
+
+This ZIP file contains two SQL*Plus scripts you can edit to taste.
+Each generates 2 SQL*Plus scripts for maintainting Constraints
+within the logged-into schema.
+
+
+GEN_ABLE.SQL	- Generates file C:\CON_DIS.SQL to DISABLE all
+		  FK, PK and UNIQUE constraints in the schem, in
+		  that order.
+		- Then generates file C:\CONS_EN to ENABLE all
+		  the same constraints in reverse order.
+
+
+	Running the first allows loading data into the schema.
+	Run the second once that is done to restore the
+	constraints.
+
+	To alter tables, however, FK constraints must be dropped.
+
+
+GEN_DCON.SQL	- Generates file C:\CON_DROP.SQL.  Running CON_DROP.SQL
+		  DROPs all FK, then PK and UNIQUE constraints in the
+		  schema.
+		- Generates file C:\CON_CR.SQL, which, when run, re-creates
+		  all the same constraints in revers order.  It takes a
+		  long time for this return set to generate, so be patient.
+		- The generated CREATEs do not include the constraints'
+		  USING INDEX or EXCEPTONS INTO clauses.
+
+
+
+Keith McLeod
+Deliberate Creations Inc.
+2 Bloor St. W.  #100
+Toronto, Ont.
+M4W 3E2
+keithmcleod@compuserve.com

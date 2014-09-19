@@ -1,0 +1,87 @@
+/*
+
+ 
+April 9, 1998 
+
+Recreating Referential Constraints that Refer to a Table
+This Code Depot entry comes from Duncan Berriman, a Oracle DBA in Hessle, East Yorkshire, England. 
+
+This script produces a script to re-create all the referential constraints that refer to a table.
+When you drop a table you must drop the referential constraints on all the other tables in the database
+that refer to the table you are trying to drop, or use the cascade constraints qualifier. 
+
+Using this script you can export a table, drop it, re-import it and re-create the constraints.
+It's useful for deframenting a table or moving a table to another tablespace. 
+
+*/
+
+rem
+rem Procedure           Recreate_ref_constraints.sql
+rem
+rem Description         This SQL script generates referential constraints 
+rem                     for a table.
+rem
+rem Argument(s)         Table name     
+rem
+rem Author              Duncan Berriman, 1/4/98
+rem                     Duncan@dcl.co.uk
+rem                     http://www.dcl.co.uk/
+
+SPOOL &nome_file..ref
+SET PAGESIZE 0
+SET FEEDBACK OFF
+SET ECHO OFF
+SET VERIFY OFF
+SET LINESIZE 132
+COLUMN DUMMY_1 NOPRINT FORMAT A30
+COLUMN DUMMY_2 NOPRINT FORMAT 9
+COLUMN DUMMY_3 NOPRINT FORMAT 99
+COLUMN COMMAND FORMAT A80
+
+SELECT 'ALTER TABLE '||C.TABLE_NAME||' ADD CONSTRAINT '||
+C.CONSTRAINT_NAME||' FOREIGN KEY (' COMMAND, 
+C.CONSTRAINT_NAME DUMMY_1, 1 DUMMY_2, 0 DUMMY_3
+FROM SYS.DBA_CONSTRAINTS C,SYS.DBA_INDEXES I 
+WHERE I.TABLE_NAME = UPPER('&&nome_tabella') 
+AND C.R_CONSTRAINT_NAME = I.INDEX_NAME
+AND C.CONSTRAINT_NAME IN (SELECT CONSTRAINT_NAME FROM SYS.DBA_CONSTRAINTS
+WHERE CONSTRAINT_TYPE = 'R')
+UNION
+SELECT DECODE(CC.POSITION,1,NULL,',') || CC.COLUMN_NAME COMMAND, 
+CC.CONSTRAINT_NAME DUMMY_1, 2 DUMMY_2, CC.POSITION DUMMY_3
+FROM SYS.DBA_CONS_COLUMNS CC,SYS.DBA_CONSTRAINTS C, SYS.DBA_INDEXES I 
+WHERE I.TABLE_NAME = UPPER('&&nome_tabella') 
+AND C.R_CONSTRAINT_NAME = I.INDEX_NAME
+AND CC.CONSTRAINT_NAME = C.CONSTRAINT_NAME
+AND CC.CONSTRAINT_NAME IN (SELECT CONSTRAINT_NAME FROM SYS.DBA_CONSTRAINTS
+WHERE CONSTRAINT_TYPE = 'R')
+UNION
+SELECT ') REFERENCES '||I.TABLE_NAME||' (' COMMAND,
+C.CONSTRAINT_NAME DUMMY_1, 3 DUMMY_2, 0 DUMMY_3 
+FROM SYS.DBA_INDEXES I, SYS.DBA_CONSTRAINTS C
+WHERE I.TABLE_NAME = UPPER('&&nome_tabella') 
+AND C.R_CONSTRAINT_NAME = I.INDEX_NAME
+AND CONSTRAINT_NAME IN (SELECT CONSTRAINT_NAME FROM SYS.DBA_CONSTRAINTS
+WHERE CONSTRAINT_TYPE = 'R')
+UNION
+SELECT DECODE(IC.COLUMN_POSITION,1,NULL,',') || IC.COLUMN_NAME COMMAND, 
+C.CONSTRAINT_NAME DUMMY_1, 4 DUMMY_2,IC.COLUMN_POSITION DUMMY_3
+FROM SYS.DBA_IND_COLUMNS IC, SYS.DBA_CONSTRAINTS C,SYS.DBA_INDEXES I 
+WHERE I.TABLE_NAME = UPPER('&&nome_tabella') 
+AND C.R_CONSTRAINT_NAME = I.INDEX_NAME
+AND IC.INDEX_NAME = I.INDEX_NAME
+AND C.CONSTRAINT_NAME IN (SELECT CONSTRAINT_NAME FROM SYS.DBA_CONSTRAINTS
+WHERE CONSTRAINT_TYPE = 'R')
+UNION
+SELECT ')'||DECODE(C.DELETE_RULE,'CASCADE',' ON DELETE CASCADE',NULL)||
+DECODE(C.STATUS,'DISABLED',' DISABLE',NULL)||';' COMMAND,
+C.CONSTRAINT_NAME DUMMY_1 ,5 DUMMY_2, 0 DUMMY_3 
+FROM SYS.DBA_CONSTRAINTS C, SYS.DBA_INDEXES I 
+WHERE I.TABLE_NAME = UPPER('&&nome_tabella') 
+AND C.R_CONSTRAINT_NAME = I.INDEX_NAME
+AND CONSTRAINT_NAME IN (SELECT CONSTRAINT_NAME FROM SYS.DBA_CONSTRAINTS
+WHERE CONSTRAINT_TYPE = 'R')
+ORDER BY 2,3,4;
+SPOOL OFF
+
+

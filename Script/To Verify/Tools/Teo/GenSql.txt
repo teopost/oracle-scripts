@@ -1,0 +1,207 @@
+BIJU'S ORACLE PAGE 
+    
+   
+GENSQL - A package to generate source code to duplicate the database structure 
+ 
+Purpose
+
+Gensql is a package comprising of various procedures to generate the source code to create objects in the database. The code is generated in a user (schema) level. This is best suited for duplicating databases with a smaller size or with no data (export / import may not allow you to have control over the initial extent size!). The package is capable of generating source code for Profile, User, Role, Table, Foreign key, Primary/Unique key, Check constraint, Index, Comment, View, Synonym, Package/Procedure/Function, Trigger and Database link. The package comes with a procedure which can do all the above object code generations in one command. The online help provides the list of parameters and their default values in each procedure.
+
+The procedure uses the Oracle database 7.3 feature of UTL_FILE to write the output. Make sure you have UTL_FILE_DIRECTORY = /output_directory_path in your init.ora file and to include this path in the script as your output destination. This script assumes a value of "/tmp".
+
+GENSQL - HELP
+
+SQL> set serveroutput on
+SQL> exec gensql.help
+Package Name : GenSql
+=====================
+Description : This package generates SQL statements to (re)create objects
+.	    : These are the procedures available in this package
+Procedure Name	        Purpose
+---------------------------- ------------------------------
+Generate_User_SQL	Generate SQL for creating user/profile/role/privs
+Generate_Table_SQL	Generate SQL for creating Tables
+Generate_Constraint_SQL Generate SQL for creating Constraints
+Generate_Index_SQL	Generate SQL for creating Indexes
+Generate_Sequence_SQL	Generate SQL for creating Sequences
+Generate_View_SQL	Generate SQL for creating Views
+Generate_Synonym_SQL	Generate SQL for creating Synonyms
+Generate_Comment_SQL	Generate SQL for creating Comments
+Generate_Procedure_SQL	Generate SQL for creating Stored Objects
+Generate_Trigger_SQL	Generate SQL for creating Triggers
+Generate_Script_Files	Execute all the above procedures
+For more information on how to use these procedures,
+******* EXEC GENSQL.procedurename; ********
+Note 1: This package uses utl_file - an Oracle7.3 feature!
+Note 2: The output files are overwritten each time the procedures are accessed
+GENSQL - GENERATE_USER_SQL
+
+SQL> set serveroutput on
+SQL> exec gensql.generate_user_sql;
+Procedure Name : GenSql.Generate_User_Sql
+=========================================
+Parameter(s)   : 1. User (Schema) Name
+.	       : 2. Data Tablespace Name - Default SMALLDBDATA
+.	       : 3. Index Tablespace Name - Default SMALLDBINDEX
+Description    : To Generate SQL Statements To Create
+.		 1. Profile related to user
+.		 2. User
+.		 3. Roles related to user
+.		 4. Privileges granted to the role/user
+Output File    : Saved at /tmp/***user.sql
+.		 Where *** is the username passed in as parameter
+Note : This procedure uses utl_file - an Oracle7.3 feature!
+GENSQL - GENERATE_TABLE_SQL
+
+SQL> set serveroutput on
+SQL> exec gensql.generate_table_sql;
+Procedure Name : GenSql.Generate_Table_Sql
+==========================================
+Parameter(s)   : 1. User (Schema) Name
+.	       : 2. Data Tablespace Name - Default is SMALLDBDATA
+Description    : To Generate SQL Statements To Create Tables belonging to USER
+Output File    : Saved at /tmp/***tabs.sql
+.		 Where *** is the username passed in as parameter
+Note : This procedure uses utl_file - an Oracle7.3 feature!
+GENSQL - GENERATE_CONSTRAINT_SQL
+
+SQL> set serveroutput on
+SQL> exec gensql.generate_constraint_sql;
+Procedure Name : GenSql.Generate_Constraint_Sql
+===============================================
+Parameter(s)   : 1. User (Schema) Name
+.	       : 2. Index Tablespace Name for Primary/Unique keys
+.	       : - Default SMALLDBINDEX
+Description    : To Generate SQL Statements To Create
+.		 1. Unique and Primary Key constraints
+.		 2. Foreign key constraints
+.		 3. Check constraints
+Output File    : Saved at /tmp/***cons.sql
+.		 Where *** is the username passed in as parameter
+Note : This procedure uses utl_file - an Oracle7.3 feature!
+GENSQL - GENERATE_INDEX_SQL
+
+SQL> set serveroutput on
+SQL> exec gensql.generate_index_sql;
+Procedure Name : GenSql.Generate_Index_Sql
+==========================================
+Parameter(s)   : 1. User (Schema) Name
+.	       : 2. Index Tablespace Name - Default SMALLDBINDEX
+Description    : To Generate SQL Statements To Create Indexes for USER
+Output File    : Saved at /tmp/***indx.sql
+.		 Where *** is the username passed in as parameter
+Note : This procedure uses utl_file - an Oracle7.3 feature!
+GENSQL - GENERATE_SEQUENCE_SQL
+
+SQL> set serveroutput on
+SQL> exec gensql.generate_sequence_sql
+Procedure Name : GenSql.Generate_Sequence_Sql
+============================================
+Parameter(s)   : 1. User (Schema) Name
+Description    : To Generate SQL Statements To Create Sequences of USER
+Output File    : Saved at /tmp/***seqs.sql
+.		 Where *** is the username passed in as parameter
+Note : This procedure uses utl_file - an Oracle7.3 feature!
+GENSQL - GENERATE_VIEW_SQL
+
+SQL> set serveroutput on
+SQL> exec gensql.generate_view_sql;
+Procedure Name : GenSql.Generate_View_Sql
+=========================================
+Parameter(s)   : 1. User (Schema) Name
+Description    : To Generate SQL Statements To Create View for USER
+Output File    : Saved at /tmp/***view.sql
+.		 Where *** is the username passed in as parameter
+Note : This procedure uses utl_file - an Oracle7.3 feature!
+GENSQL - GENERATE_SYNONYM_SQL
+
+SQL> set serveroutput on
+SQL> exec gensql.generate_synonym_sql
+Procedure Name : GenSql.Generate_Synonym_Sql
+============================================
+Parameter(s)   : 1. User (Schema) Name
+Description    : To Generate SQL Statements To Create Synonyms for USER
+Output File    : Saved at /tmp/***syns.sql
+.		 Where *** is the username passed in as parameter
+Note : This procedure uses utl_file - an Oracle7.3 feature!
+GENSQL - GENERATE_COMMENT_SQL
+
+SQL> set serveroutput on
+SQL> exec gnsql.generate_comment_sql;
+Procedure Name : GenSql.Generate_Comment_Sql
+============================================
+Parameter(s)   : 1. User (Schema) Name
+Description    : To Generate SQL Statements To Create Comments for USER Objects
+Output File    : Saved at /tmp/***comm.sql
+.		 Where *** is the username passed in as parameter
+Note : This procedure uses utl_file - an Oracle7.3 feature!
+GENSQL - GENERATE_PROCEDURE_SQL
+
+SQL> set serveroutput on
+SQL> exec gensql.generate_procedure_sql;
+Procedure Name : GenSql.Generate_Procedure_Sql
+==============================================
+Parameter(s)   : 1. User (Schema) Name
+Description    : To Generate SQL Statements To Create Stored Objects for USER
+Output File    : Saved at /tmp/***proc.sql
+.		 Where *** is the username passed in as parameter
+Note : This procedure uses utl_file - an Oracle7.3 feature!
+GENSQL - GENERATE_TRIGGER_SQL
+
+SQL> set serveroutput on
+SQL> exec gensql.generate_trigger_sql
+Procedure Name : GenSql.Generate_Trigger_Sql
+============================================
+Parameter(s)   : 1. User (Schema) Name
+Description    : To Generate SQL Statements To Create Triggers for USER
+Output File    : Saved at /tmp/***trig.sql
+.		 Where *** is the username passed in as parameter
+Note : This procedure uses utl_file - an Oracle7.3 feature!
+GENSQL - GENERATE_SCRIPT_FILES
+
+SQL> set serveroutput on
+SQL> exec gensql.generate_script_files;
+Procedure Name : GenSql.Generate_Script_Files
+=============================================
+Parameter(s)   : 1. User (Schema) Name
+.	       : 2. Data Tablespace Name - Default SMALLDBDATA
+.	       : 3. Index Tablespace Name - Default SMALLDBINDEX
+Description    : To Generate SQL Statements To Create All Objects In Schema
+Object Name		      File Name
+----------------------------  ------------------------------
+User/Profile/Role/Privs       /tmp/***user.sql
+Tables			      /tmp/***tabs.sql
+Indexes 		      /tmp/***indx.sql
+Views			      /tmp/***view.sql
+Constraints		      /tmp/***cons.sql
+Sequences		      /tmp/***seqs.sql
+Synonyms		      /tmp/***syns.sql
+Comments		      /tmp/***comm.sql
+Stored Objects		      /tmp/***proc.sql
+Triggers		      /tmp/***trig.sql
+DB Links		      /tmp/***dbln.sql
+.			      Where *** is the username passed in as parameter
+Note : This procedure uses utl_file - an Oracle7.3 feature!
+
+View  Download
+
+
+ Page Hosted By 
+ 
+Free Home Pages  Sign Guestbook 
+View Guestbook  Last Updated 
+24 Sep 1998 
+Biju Thomas  
+
+
+
+ 
+  
+ 
+
+
+
+ 
+
+
+ 

@@ -1,0 +1,108 @@
+COL SORT1 NOPRINT 
+COL SORT2 NOPRINT 
+COL SORT3 NOPRINT 
+COL SORT4 NOPRINT 
+BREAK ON SORT1 SKIP 1
+set linesize 120
+SET HEADING OFF
+SET ECHO OFF
+SET FEEDBACK OFF
+SET PAGESIZE 0
+SPOOL bldpack.sql
+
+select 'set echo on ' from dual;
+select 'spool bldpack.lst' from dual;
+select 'Remark Build package definitions' from dual;
+
+SELECT NAME SORT1, LINE SORT2,
+'Create or Replace ' || TEXT
+FROM USER_SOURCE
+WHERE TYPE = 'PACKAGE'
+AND LINE = 1
+UNION
+SELECT NAME SORT1, LINE SORT2,
+TEXT 
+FROM USER_SOURCE
+WHERE TYPE = 'PACKAGE'
+AND LINE > 1
+UNION
+SELECT NAME SORT1, 999999 SORT2,
+'/'
+FROM USER_SOURCE
+WHERE TYPE = 'PACKAGE'
+AND LINE = 1
+ORDER BY 1,2;
+
+spool off
+SPOOL bldpbdy.sql
+
+select 'set echo on ' from dual;
+select 'spool bldpbdy.lst' from dual;
+select 'Remark Build package body definitions' from dual;
+
+SELECT NAME SORT1, LINE SORT2,
+'Create or Replace ' || TEXT
+FROM USER_SOURCE
+WHERE TYPE = 'PACKAGE BODY'
+AND LINE = 1
+UNION
+SELECT NAME SORT1, LINE SORT2,
+TEXT 
+FROM USER_SOURCE
+WHERE TYPE = 'PACKAGE BODY'
+AND LINE > 1
+UNION
+SELECT NAME SORT1, 999999 SORT2,
+'/'
+FROM USER_SOURCE
+WHERE TYPE = 'PACKAGE BODY'
+AND LINE = 1
+ORDER BY 1,2;
+spool off
+SPOOL bldproc.sql
+
+select 'set echo on ' from dual;
+select 'spool bldproc.lst' from dual;
+select 'Remark Build procedure definitions' from dual;
+
+SELECT NAME SORT1, LINE SORT2,
+'Create or Replace ' || TEXT
+FROM USER_SOURCE
+WHERE TYPE = 'PROCEDURE'
+AND LINE = 1
+UNION
+SELECT NAME SORT1, LINE SORT2,
+TEXT 
+FROM USER_SOURCE
+WHERE TYPE = 'PROCEDURE'
+AND LINE > 1
+UNION
+SELECT NAME SORT1, 999999 SORT2,
+'/'
+FROM USER_SOURCE
+WHERE TYPE = 'PROCEDURE'
+AND LINE = 1
+ORDER BY 1,2;
+
+select 'Remark Build function definitions' from dual;
+
+SELECT NAME SORT1, LINE SORT2,
+'Create or Replace ' || TEXT
+FROM USER_SOURCE
+WHERE TYPE = 'FUNCTION'
+AND LINE = 1
+UNION
+SELECT NAME SORT1, LINE SORT2,
+TEXT 
+FROM USER_SOURCE
+WHERE TYPE = 'FUNCTION'
+AND LINE > 1
+UNION
+SELECT NAME SORT1, 999999 SORT2,
+'/'
+FROM USER_SOURCE
+WHERE TYPE = 'FUNCTION'
+AND LINE = 1
+ORDER BY 1,2;
+
+spool off 
