@@ -1,4 +1,4 @@
-CREATE OR REPLACE package apex as
+CREATE OR REPLACE package apex_utils as
   procedure help;
   procedure db_check;
   procedure autovalid;
@@ -10,12 +10,13 @@ CREATE OR REPLACE package apex as
   procedure drop_table(tabella in varchar2);
   procedure drop_sequence(nome_sequence in varchar2);
   procedure reset_seq (p_seq_name IN VARCHAR2, p_start_num IN NUMBER DEFAULT 1);
+  procedure align_table_seq (p_seq_name IN VARCHAR2, p_tab_name IN VARCHAR2, p_key IN VARCHAR2);
   procedure drop_procedure(procedura in varchar2);
   PROCEDURE rename_ck (p_nome_tabella IN VARCHAR2 DEFAULT NULL, p_output IN CHAR DEFAULT 'N');
-end apex;
+end apex_utils;
 /
 
-CREATE OR REPLACE PACKAGE BODY apex AS
+CREATE OR REPLACE PACKAGE BODY apex_utils AS
 --------------------------------------------------------------------------------
 -- PROCEDURE help
 --------------------------------------------------------------------------------
@@ -59,15 +60,15 @@ dat_ute_creaz varchar2(30);
 cnt_obj_type  varchar2(13);
 cnt_obj_num   number;
 cursor  invalid_objects is
-select 	object_type a1,
-	object_name a2
-from 	user_objects
-where 	status = 'INVALID'
+select     object_type a1,
+    object_name a2
+from     user_objects
+where     status = 'INVALID'
 order by 1;
 cursor  count_objects is
-select 	object_type b1,
-	count(*)    b2
-from 	user_objects
+select     object_type b1,
+    count(*)    b2
+from     user_objects
 group by object_type;
 begin
 dbms_output.enable(1000000);
@@ -120,26 +121,26 @@ begin
    dbms_output.put_line('--------------------------------------');
    dbms_output.put_line(chr(0));
    loop
-    select 	count(*) into also_invalid
-    from 	user_objects
-    where 	status = 'INVALID';
+    select     count(*) into also_invalid
+    from     user_objects
+    where     status = 'INVALID';
     exit when (also_invalid = 0 or attempt = max_attempt);
     attempt := attempt + 1;
     dbms_output.put_line(chr(0));
     dbms_output.put_line('Tentativo numero : '||attempt);
     dbms_output.put_line('----------------------------');
-      for invalid in ( select 	object_type,
-		    		object_name,
-     				decode(object_type,'VIEW',1,'FUNCTION',2,'PROCEDURE',3,'PACKAGE',4,'PACKAGE BODY',5,'TRIGGER',6)
-   		        from   	user_objects
-   			where  	status        = 'INVALID'
-   			and    	object_type in ('PACKAGE',
-                       		'PACKAGE BODY',
-                       		'FUNCTION',
-                       		'PROCEDURE',
-                       		'TRIGGER',
-                       		'VIEW')
-			order by 3) loop
+      for invalid in ( select     object_type,
+                    object_name,
+                     decode(object_type,'VIEW',1,'FUNCTION',2,'PROCEDURE',3,'PACKAGE',4,'PACKAGE BODY',5,'TRIGGER',6)
+                   from       user_objects
+               where      status        = 'INVALID'
+               and        object_type in ('PACKAGE',
+                               'PACKAGE BODY',
+                               'FUNCTION',
+                               'PROCEDURE',
+                               'TRIGGER',
+                               'VIEW')
+            order by 3) loop
       if invalid.object_type = 'PACKAGE BODY' then
         sql_statement := 'alter package '||invalid.object_name||' compile body';
       else
@@ -155,12 +156,12 @@ begin
    end loop;
    if attempt = max_attempt then
         dbms_output.put_line(chr(0));
-   	dbms_output.put_line('ATTENZIONE');
-   	dbms_output.put_line('Dopo '||attempt||' tentativi, alcuni oggetti sono rimasti invalidi.');
-   	dbms_output.put_line('Effettuare una controllo della base dati');
+       dbms_output.put_line('ATTENZIONE');
+       dbms_output.put_line('Dopo '||attempt||' tentativi, alcuni oggetti sono rimasti invalidi.');
+       dbms_output.put_line('Effettuare una controllo della base dati');
    else
-   	dbms_output.put_line(chr(0));
-   	dbms_output.put_line('Tutti gli oggetti sono stati compilati con successo dopo '||attempt||' tentativi');
+       dbms_output.put_line(chr(0));
+       dbms_output.put_line('Tutti gli oggetti sono stati compilati con successo dopo '||attempt||' tentativi');
    end if;
 end;
 END; -- End procedure Autovalid
@@ -175,20 +176,20 @@ cname varchar2(50);
 cname2 varchar2(50);
 r_user varchar2(50);
 cursor c1 is
-select 	c.constraint_name,
-	c.r_constraint_name cname2,
-	c.table_name table1,
-	r.table_name table2,
+select     c.constraint_name,
+    c.r_constraint_name cname2,
+    c.table_name table1,
+    r.table_name table2,
         decode(c.status,'DISABLED','DISABLE',' ') status,
         decode(c.delete_rule,'CASCADE',' ON DELETE CASCADE ',' ') delete_rule,
-	c.r_owner r_user
+    c.r_owner r_user
 from    all_constraints c,
         all_constraints r
 where   c.constraint_type='R'
 and     c.r_constraint_name = r.constraint_name
 and     c.table_name = upper(NOME_TABELLA)
-and 	c.owner = user
-and 	c.r_owner = r.owner
+and     c.owner = user
+and     c.r_owner = r.owner
 union
 select c.constraint_name,c.r_constraint_name cname2,
        c.table_name table1, r.table_name table2,
@@ -249,68 +250,68 @@ AS
 BEGIN
 dbms_output.enable (1000000);
 declare
-	priv_syn 	varchar2(500);
+    priv_syn     varchar2(500);
 cursor c1 is
-	select '/* Sinonimi verso utente societario */' a1
-	from dual
-	union all
-	select '/* -------------------------------- */' a1
-	from dual
-	union all
-	select 	'DROP SYNONYM '||rpad(synonym_name,30)||';'
-	from 	user_synonyms
-	where 	table_name like upper(NOME_TABELLA||'%')
-	and 	table_owner = user
-	union all
-	select 	'CREATE SYNONYM '||rpad(synonym_name,30)||' FOR '||table_owner||'.'||table_name|| decode(db_link, null, '', '@'||db_link) ||';'
-	from 	user_synonyms
-	where 	table_name like upper(NOME_TABELLA||'%')
-	and 	table_owner = user
-	union all
-	select chr(0) from dual
-	union all
-	select '/* Sinonimi verso altri utenti  */'
-	from dual
-	union all
-	select '/* ------------------------------------- */' a1
-	from dual
-	union all
-	select 	'DROP SYNONYM '||rpad(synonym_name,30)||';'
-	from 	user_synonyms
-	where 	table_name like upper(NOME_TABELLA||'%')
-	and 	table_owner != user
-	union all
-	select 	'CREATE SYNONYM '||rpad(synonym_name,30)||' FOR '||table_owner||'.'||table_name|| decode(db_link, null, '', '@'||db_link) ||';'
-	from 	user_synonyms
-	where 	table_name like upper(NOME_TABELLA||'%')
-	and 	table_owner != user
-	union all
-	select chr(0) from dual
-	union all
-	select '/* Sinonimi publici */'
-	from dual
-	union all
-	select '/* ---------------- */' a1
-	from dual
-	union all
-	select 'DROP PUBLIC SYNONYM '||rpad(synonym_name,30)||';'
-	from 	all_synonyms
-	where 	owner='PUBLIC'
-	and 	table_name like upper(NOME_TABELLA||'%')
-	and 	table_owner=user
-	union all
-	select 'CREATE PUBLIC SYNONYM '||rpad(synonym_name,30)||' for '||table_owner||'.'||table_name|| decode(db_link, null, '', '@'||db_link) ||';'
-	from 	all_synonyms
-	where 	owner='PUBLIC'
-	and 	table_name like upper(NOME_TABELLA||'%')
-	and 	table_owner=user;
+    select '/* Sinonimi verso utente societario */' a1
+    from dual
+    union all
+    select '/* -------------------------------- */' a1
+    from dual
+    union all
+    select     'DROP SYNONYM '||rpad(synonym_name,30)||';'
+    from     user_synonyms
+    where     table_name like upper(NOME_TABELLA||'%')
+    and     table_owner = user
+    union all
+    select     'CREATE SYNONYM '||rpad(synonym_name,30)||' FOR '||table_owner||'.'||table_name|| decode(db_link, null, '', '@'||db_link) ||';'
+    from     user_synonyms
+    where     table_name like upper(NOME_TABELLA||'%')
+    and     table_owner = user
+    union all
+    select chr(0) from dual
+    union all
+    select '/* Sinonimi verso altri utenti  */'
+    from dual
+    union all
+    select '/* ------------------------------------- */' a1
+    from dual
+    union all
+    select     'DROP SYNONYM '||rpad(synonym_name,30)||';'
+    from     user_synonyms
+    where     table_name like upper(NOME_TABELLA||'%')
+    and     table_owner != user
+    union all
+    select     'CREATE SYNONYM '||rpad(synonym_name,30)||' FOR '||table_owner||'.'||table_name|| decode(db_link, null, '', '@'||db_link) ||';'
+    from     user_synonyms
+    where     table_name like upper(NOME_TABELLA||'%')
+    and     table_owner != user
+    union all
+    select chr(0) from dual
+    union all
+    select '/* Sinonimi publici */'
+    from dual
+    union all
+    select '/* ---------------- */' a1
+    from dual
+    union all
+    select 'DROP PUBLIC SYNONYM '||rpad(synonym_name,30)||';'
+    from     all_synonyms
+    where     owner='PUBLIC'
+    and     table_name like upper(NOME_TABELLA||'%')
+    and     table_owner=user
+    union all
+    select 'CREATE PUBLIC SYNONYM '||rpad(synonym_name,30)||' for '||table_owner||'.'||table_name|| decode(db_link, null, '', '@'||db_link) ||';'
+    from     all_synonyms
+    where     owner='PUBLIC'
+    and     table_name like upper(NOME_TABELLA||'%')
+    and     table_owner=user;
 begin
       open c1;
-	loop
- 	fetch c1 into priv_syn;
- 	exit when c1%NOTFOUND;
-  	dbms_output.put_line(priv_syn);
- 	end loop;
+    loop
+     fetch c1 into priv_syn;
+     exit when c1%NOTFOUND;
+      dbms_output.put_line(priv_syn);
+     end loop;
 end;
 END; -- end procedure show_synonyms
 --------------------------------------------------------------------------------
@@ -329,9 +330,9 @@ declare
    error_flag    number;
 cursor c1 is
 select  'alter table '||table_name || ' '|| stato || ' constraint '||constraint_name a1,
-	constraint_name a2
-from 	user_constraints
-where 	constraint_type ='R'
+    constraint_name a2
+from     user_constraints
+where     constraint_type ='R'
 and status = decode(upper(stato) ,'ENABLE','DISABLED','DISABLE','ENABLED');
 begin
 dbms_output.enable(1000000);
@@ -354,21 +355,21 @@ open c1;
       fetch c1 into sql_statement,const_name;
       exit when c1%NOTFOUND;
       begin
---	      dbms_output.put_line(sql_statement);
-	      cursor_id := dbms_sql.open_cursor;
-	      dbms_sql.parse(cursor_id, sql_statement, dbms_sql.native);
-	      ret_val := dbms_sql.execute(cursor_id);
-	      dbms_sql.close_cursor(cursor_id);
-	      EXCEPTION WHEN others THEN
-	        error_flag := 1;
-	      	dbms_output.put_line('Errore constraint: '||const_name);
+--          dbms_output.put_line(sql_statement);
+          cursor_id := dbms_sql.open_cursor;
+          dbms_sql.parse(cursor_id, sql_statement, dbms_sql.native);
+          ret_val := dbms_sql.execute(cursor_id);
+          dbms_sql.close_cursor(cursor_id);
+          EXCEPTION WHEN others THEN
+            error_flag := 1;
+              dbms_output.put_line('Errore constraint: '||const_name);
       end;
   end loop;
 dbms_output.put_line(chr(0));
 if error_flag = 0 then
-	dbms_output.put_line('Tutte le foreign-key di '||user||' sono state '|| upper(stato_abil) ||'TE correttamente.');
+    dbms_output.put_line('Tutte le foreign-key di '||user||' sono state '|| upper(stato_abil) ||'TE correttamente.');
 else
-	dbms_output.put_line('Verificare gli errori sulla base dati di '||user);
+    dbms_output.put_line('Verificare gli errori sulla base dati di '||user);
 end if;
 end;
 END; -- End procedure set_foreign
@@ -387,7 +388,7 @@ declare
    error_flag    number;
 cursor c1 is
 select  'alter table '||table_name || ' ' || stato ||' all triggers ' a1
-from 	user_triggers
+from     user_triggers
 where status = decode(upper(stato) ,'ENABLE','DISABLED','DISABLE','ENABLED');
 begin
 dbms_output.enable(1000000);
@@ -410,21 +411,21 @@ open c1;
       fetch c1 into sql_statement;
       exit when c1%NOTFOUND;
       begin
---	      dbms_output.put_line(sql_statement);
-	      cursor_id := dbms_sql.open_cursor;
-	      dbms_sql.parse(cursor_id, sql_statement, dbms_sql.native);
-	      ret_val := dbms_sql.execute(cursor_id);
-	      dbms_sql.close_cursor(cursor_id);
-	      EXCEPTION WHEN others THEN
-	        error_flag := 1;
-	      	dbms_output.put_line('Errore trigger su: '||sql_statement);
+--          dbms_output.put_line(sql_statement);
+          cursor_id := dbms_sql.open_cursor;
+          dbms_sql.parse(cursor_id, sql_statement, dbms_sql.native);
+          ret_val := dbms_sql.execute(cursor_id);
+          dbms_sql.close_cursor(cursor_id);
+          EXCEPTION WHEN others THEN
+            error_flag := 1;
+              dbms_output.put_line('Errore trigger su: '||sql_statement);
       end;
   end loop;
 dbms_output.put_line(chr(0));
 if error_flag = 0 then
-	dbms_output.put_line('Tutti i triggers di '||user||' sono stati '|| upper(stato_abil) ||'TI correttamente.');
+    dbms_output.put_line('Tutti i triggers di '||user||' sono stati '|| upper(stato_abil) ||'TI correttamente.');
 else
-	dbms_output.put_line('Verificare gli errori sulla base dati di '||user);
+    dbms_output.put_line('Verificare gli errori sulla base dati di '||user);
 end if;
 end;
 END; -- End procedure set_trigger;
@@ -439,8 +440,8 @@ constraint_present     number := 0;
 index_present          number := 0;
 constraint_tablename   varchar2(80);
 statement              varchar2(80);
-cursor_id_add  	       number;
-ret_val 	       number;
+cursor_id_add             number;
+ret_val            number;
    Begin
       Select count(*) into constraint_present
       from user_constraints
@@ -449,24 +450,24 @@ ret_val 	       number;
       from user_indexes
       where index_name = Upper(ObjectName);
       If constraint_present != 0  Then
-	      Select table_name into constraint_tablename
-	      from user_constraints
-	      where constraint_name = Upper(ObjectName);
+          Select table_name into constraint_tablename
+          from user_constraints
+          where constraint_name = Upper(ObjectName);
               statement := 'alter table ' || constraint_tablename || ' drop constraint '|| Ltrim(Rtrim(ObjectName));
-	      dbms_output.put_line('Eseguo: '|| statement);
-	      cursor_id_add := dbms_sql.open_cursor;
-	      dbms_sql.parse(cursor_id_add, statement, dbms_sql.native);
-	      ret_val := dbms_sql.execute(cursor_id_add);
-	      dbms_sql.close_cursor(cursor_id_add);
+          dbms_output.put_line('Eseguo: '|| statement);
+          cursor_id_add := dbms_sql.open_cursor;
+          dbms_sql.parse(cursor_id_add, statement, dbms_sql.native);
+          ret_val := dbms_sql.execute(cursor_id_add);
+          dbms_sql.close_cursor(cursor_id_add);
       ElsIf index_present != 0 Then
               statement := 'drop index ' || ObjectName;
-	      dbms_output.put_line('Eseguo: '|| statement);
-	      cursor_id_add := dbms_sql.open_cursor;
-	      dbms_sql.parse(cursor_id_add, statement, dbms_sql.native);
-	      ret_val := dbms_sql.execute(cursor_id_add);
-	      dbms_sql.close_cursor(cursor_id_add);
+          dbms_output.put_line('Eseguo: '|| statement);
+          cursor_id_add := dbms_sql.open_cursor;
+          dbms_sql.parse(cursor_id_add, statement, dbms_sql.native);
+          ret_val := dbms_sql.execute(cursor_id_add);
+          dbms_sql.close_cursor(cursor_id_add);
       Else
-	      dbms_output.put_line('Nessuna operazione');
+          dbms_output.put_line('Nessuna operazione');
       End If;
    End;
 End; -- End Procedure drop_fk
@@ -563,6 +564,25 @@ BEGIN
    END IF;
 END;
 
+--------------------------------------------------------------------------------
+-- PROCEDURE align_table_seq
+--------------------------------------------------------------------------------
+PROCEDURE align_table_seq (p_seq_name IN VARCHAR2, p_tab_name IN VARCHAR2, p_key IN VARCHAR2)
+IS
+   l_val   NUMBER;
+BEGIN
+   
+   -- get the current seq value
+   EXECUTE IMMEDIATE 'select max(' || p_key || ') from ' || p_tab_name INTO l_val;
+   
+   if l_val is null then
+      l_val := 0;
+   end if;
+   
+   l_val := l_val + 1;
+   
+   reset_seq(p_seq_name, l_val);
+END;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE drop_procedure
@@ -651,7 +671,7 @@ BEGIN
          IF cur_tab_c_const%ROWCOUNT = 0 THEN
             DBMS_OUTPUT.PUT_LINE ('La tabella: ' || rec_table.table_name || ' non ha check constraint');
          ELSE
-            -- La colonna search_condition è tipo LONG per poter far un confronto con una stringa devo assegnarla
+            -- La colonna search_condition Ã¨ tipo LONG per poter far un confronto con una stringa devo assegnarla
             -- ad una variabile di tipo VARCHAR2
             ls_search_condition := rec_const.search_condition;
 
@@ -686,7 +706,7 @@ BEGIN
                num_const := 0;
 
                FOR rec_check IN cur_check_dup (rec_table.table_name, rec_const.column_name) LOOP
-                  -- La colonna search_condition è tipo LONG per poter far un confronto con una stringa devo assegnarla
+                  -- La colonna search_condition Ã¨ tipo LONG per poter far un confronto con una stringa devo assegnarla
                   -- ad una variabile di tipo VARCHAR2
                   ls_check_condition := rec_check.search_condition;
 
@@ -736,5 +756,8 @@ BEGIN
    END LOOP;   -- rec_table
 END rename_ck;
 
-end APEX; -- End Package
+end apex_utils; -- End Package
 /
+
+
+
