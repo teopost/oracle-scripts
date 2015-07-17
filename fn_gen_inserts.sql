@@ -1,6 +1,3 @@
-/*
-Presa da http://dbaora.com/oracle-generate-rows-as-insert-statements-from-table-view-using-plsql/
-*/
 CREATE OR REPLACE function fn_gen_inserts
 (
   p_sql                        clob, 
@@ -99,6 +96,7 @@ begin
   -- INSERT - header generation
   ---------------------------------------
   l_clob_all := 
+  'set define off'||chr(10)||
   'declare'||chr(10)||
   '  type   t_clob is table of clob index by binary_integer;'||chr(10)||
   '  l_clob t_clob;'||chr(10)||
