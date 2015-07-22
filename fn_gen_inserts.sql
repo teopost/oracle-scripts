@@ -1,12 +1,13 @@
 CREATE OR REPLACE function fn_gen_inserts
 (
   p_sql                        clob, 
-  p_new_owner_name             varchar2,
-  p_new_table_name             varchar2
+  p_new_table_name             varchar2,
+  p_new_owner_name             varchar2 default null
 )
 return clob
 is
   l_cur                        number;
+  NL                           varchar2(2) := chr(13)||chr(10);
   l_sql                        clob := p_sql;
   l_ret                        number;
   l_col_cnt                    number;
@@ -74,21 +75,21 @@ is
 
   procedure print_rec(rec in dbms_sql.desc_rec) is
   begin
-    l_clob_all := l_clob_all||chr(10)||
-      'col_type            =    ' || rec.col_type||chr(10)||
-      'col_maxlen          =    ' || rec.col_max_len||chr(10)||
-      'col_name            =    ' || rec.col_name||chr(10)||
-      'col_name_len        =    ' || rec.col_name_len||chr(10)||
-      'col_schema_name     =    ' || rec.col_schema_name||chr(10)||
-      'col_schema_name_len =    ' || rec.col_schema_name_len||chr(10)||
-      'col_precision       =    ' || rec.col_precision||chr(10)||
-      'col_scale           =    ' || rec.col_scale||chr(10)||
+    l_clob_all := l_clob_all||NL||
+      'col_type            =    ' || rec.col_type||NL||
+      'col_maxlen          =    ' || rec.col_max_len||NL||
+      'col_name            =    ' || rec.col_name||NL||
+      'col_name_len        =    ' || rec.col_name_len||NL||
+      'col_schema_name     =    ' || rec.col_schema_name||NL||
+      'col_schema_name_len =    ' || rec.col_schema_name_len||NL||
+      'col_precision       =    ' || rec.col_precision||NL||
+      'col_scale           =    ' || rec.col_scale||NL||
       'col_null_ok         =    ';
 
     if (rec.col_null_ok) then
-      l_clob_all := l_clob_all||'true'||chr(10);
+      l_clob_all := l_clob_all||'true'||NL;
     else
-      l_clob_all := l_clob_all||'false'||chr(10);
+      l_clob_all := l_clob_all||'false'||NL;
     end if;
   end;  
 begin
@@ -96,19 +97,19 @@ begin
   -- INSERT - header generation
   ---------------------------------------
   l_clob_all := 
-  'set define off'||chr(10)||
-  'declare'||chr(10)||
-  '  type   t_clob is table of clob index by binary_integer;'||chr(10)||
-  '  l_clob t_clob;'||chr(10)||
-  '  type   t_varchar2 is table of varchar2(64) index by binary_integer;'||chr(10)||
-  '  l_varchar2 t_varchar2;'||chr(10)||
-  'begin'||chr(10)||
-  '/*'||chr(10);
+  'set define off'||NL||
+  'declare'||NL||
+  '  type   t_clob is table of clob index by binary_integer;'||NL||
+  '  l_clob t_clob;'||NL||
+  '  type   t_varchar2 is table of varchar2(64) index by binary_integer;'||NL||
+  '  l_varchar2 t_varchar2;'||NL||
+  'begin'||NL;
+
 
   ---------------------------------------
   -- Introduction
   ---------------------------------------
-  l_clob_all := l_clob_all||l_line||chr(10)||'Parsing query:'||chr(10)||l_sql||chr(10);
+  -- l_clob_all := l_clob_all||l_line||NL||'Parsing query:'||NL||l_sql||NL;
 
   ---------------------------------------
   -- Open parse cursor
@@ -119,20 +120,22 @@ begin
   ---------------------------------------
   -- Describe columns
   ---------------------------------------
-  l_clob_all := l_clob_all||l_line||chr(10)||'Describe columns:'||chr(10);
-
+  
   dbms_sql.describe_columns(l_cur, l_col_cnt, l_rec_tab);
 
+  /*
+  
+  l_clob_all := l_clob_all||l_line||NL||'Describe columns:'||NL;
+  
   for i in 1..l_rec_tab.count
   loop
     print_rec(l_rec_tab(i));
   end loop;
-
-  l_clob_all := l_clob_all||chr(10)||
-            '*/'||chr(10)||
-            '  '||chr(10)||l_line||chr(10)||
-            '  -- start generation of records'||chr(10)||
-            '  '||l_line||chr(10);
+  
+  */
+  l_clob_all := l_clob_all||NL||
+            '  -- start generation of records'||NL||
+            '  '||l_line||NL;
 
   ---------------------------------------
   -- Define columns
@@ -174,7 +177,7 @@ begin
     elsif l_rec_tab(i).col_type = cons_urowid_code then --urowid
       dbms_sql.define_column(l_cur, i, l_urowid_col); 
     else
-      raise_application_error(-20001, 'Column: '||l_rec_tab(i).col_name||chr(10)||
+      raise_application_error(-20001, 'Column: '||l_rec_tab(i).col_name||NL||
                                       'Type not supported: '||l_rec_tab(i).col_type);
       --not supported
     end if;
@@ -250,34 +253,41 @@ begin
       end if;
 
       if l_rec_tab(i).col_type in (cons_clob_code, cons_char_code, cons_varchar2_code) then
-        l_clob_line := l_clob_line||'  l_clob('||to_char(i)||') :=q'''||l_separator||l_clob||l_separator||''';'||chr(10);
+        l_clob_line := l_clob_line||'  l_clob('||to_char(i)||') :=q'''||l_separator||l_clob||l_separator||''';'||NL;
       else
-        l_clob_line := l_clob_line||'  l_varchar2('||to_char(i)||') :=q'''||l_separator||l_clob||l_separator||''';'||chr(10);
+        l_clob_line := l_clob_line||'  l_varchar2('||to_char(i)||') :=q'''||l_separator||l_clob||l_separator||''';'||NL;
       end if;
     end loop;
 
-    l_clob_all := l_clob_all||chr(10)||l_clob_line;
+    l_clob_all := l_clob_all||NL||l_clob_line;
 
     ---------------------------------------
     -- Building INSERT - build column list
     ---------------------------------------
-    l_clob_all := l_clob_all||chr(10)||
-              '  insert into '||p_new_owner_name||'.'||p_new_table_name||chr(10)||
-              '  ('||chr(10);
+    if p_new_owner_name is null then
+        l_clob_all := l_clob_all||chr(13)||NL||
+              '  insert into '||p_new_table_name||NL||
+              '  ('||NL;
+    else
+        l_clob_all := l_clob_all||chr(13)||NL||
+              '  insert into '||p_new_owner_name||'.'||p_new_table_name||NL||
+              '  ('||NL;
+    end if;
+
 
     for i in 1..l_rec_tab.count
     loop
       if i = 1 then
-        l_clob_all := l_clob_all||'     '||l_rec_tab(i).col_name||chr(10);
+        l_clob_all := l_clob_all||'     '||l_rec_tab(i).col_name||NL;
       else  
-        l_clob_all := l_clob_all||'    ,'||l_rec_tab(i).col_name||chr(10);
+        l_clob_all := l_clob_all||'    ,'||l_rec_tab(i).col_name||NL;
       end if;  
     end loop;    
 
     l_clob_all := l_clob_all||
-              '  )'||chr(10)||
-              '  values'||chr(10)||
-              '  ('||chr(10);
+              '  )'||NL||
+              '  values'||NL||
+              '  ('||NL;
 
     ---------------------------------------
     -- Building INSERT - build values
@@ -291,46 +301,48 @@ begin
       end if;
 
       if l_rec_tab(i).col_type = cons_number_code then --number
-        l_clob_all := l_clob_all||'to_number(l_varchar2('||to_char(i)||'))'||chr(10);
+        l_clob_all := l_clob_all||'to_number(l_varchar2('||to_char(i)||'))'||NL;
 --      elsif l_rec_tab(i).col_type = cons_long_code then --long
 --        l_clob := l_long_col;
       elsif l_rec_tab(i).col_type = cons_clob_code then --clob
-        l_clob_all := l_clob_all||'l_clob('||to_char(i)||')'||chr(10);
+        l_clob_all := l_clob_all||'l_clob('||to_char(i)||')'||NL;
       elsif l_rec_tab(i).col_type = cons_char_code then --timestamp with local time zone
-        l_clob_all := l_clob_all||'to_char(l_clob('||to_char(i)||'))'||chr(10);
+        l_clob_all := l_clob_all||'to_char(l_clob('||to_char(i)||'))'||NL;
       elsif l_rec_tab(i).col_type = cons_varchar2_code then --timestamp with local time zone
-        l_clob_all := l_clob_all||'to_char(l_clob('||to_char(i)||'))'||chr(10);
+        l_clob_all := l_clob_all||'to_char(l_clob('||to_char(i)||'))'||NL;
       elsif l_rec_tab(i).col_type = cons_date_code then --date
-        l_clob_all := l_clob_all||'to_date(l_varchar2('||to_char(i)||'),'''||cons_date_frm||''')'||chr(10);
+        l_clob_all := l_clob_all||'to_date(l_varchar2('||to_char(i)||'),'''||cons_date_frm||''')'||NL;
       elsif l_rec_tab(i).col_type = cons_timestamp_code then --timestamp
-        l_clob_all := l_clob_all||'to_timestamp(l_varchar2('||to_char(i)||'),'''||cons_timestamp_frm||''')'||chr(10);
+        l_clob_all := l_clob_all||'to_timestamp(l_varchar2('||to_char(i)||'),'''||cons_timestamp_frm||''')'||NL;
       elsif l_rec_tab(i).col_type = cons_timestamp_wtz_code then --timestamp with time zone
-        l_clob_all := l_clob_all||'to_timestamp_tz(l_varchar2('||to_char(i)||'),'''||cons_timestamp_wtz_frm||''')'||chr(10);
+        l_clob_all := l_clob_all||'to_timestamp_tz(l_varchar2('||to_char(i)||'),'''||cons_timestamp_wtz_frm||''')'||NL;
       elsif l_rec_tab(i).col_type = cons_interval_ytm_code then --interval year to month
-        l_clob_all := l_clob_all||'to_yminterval(l_varchar2('||to_char(i)||'))'||chr(10);
+        l_clob_all := l_clob_all||'to_yminterval(l_varchar2('||to_char(i)||'))'||NL;
       elsif l_rec_tab(i).col_type = cons_interval_dts_code then --interval day to second
-        l_clob_all := l_clob_all||'to_dsinterval(l_varchar2('||to_char(i)||'))'||chr(10);
+        l_clob_all := l_clob_all||'to_dsinterval(l_varchar2('||to_char(i)||'))'||NL;
       elsif l_rec_tab(i).col_type = cons_timestamp_lwtz_code then --timestamp with local time zone
-        l_clob_all := l_clob_all||'to_timestamp_tz(l_varchar2('||to_char(i)||'),'''||cons_timestamp_wtz_frm||''')'||chr(10);
+        l_clob_all := l_clob_all||'to_timestamp_tz(l_varchar2('||to_char(i)||'),'''||cons_timestamp_wtz_frm||''')'||NL;
       else  
-        l_clob_all := l_clob_all||'l_varchar2('||to_char(i)||')'||chr(10);
+        l_clob_all := l_clob_all||'l_varchar2('||to_char(i)||')'||NL;
       end if;  
     end loop; 
 
-    l_clob_all := l_clob_all||'  );'||chr(10);
+    l_clob_all := l_clob_all||'  );'||NL;
   end loop;
 
   ---------------------------------------
   -- Building INSERT - end of code
   ---------------------------------------
-  l_clob_all := l_clob_all||chr(10)||'end;';
-  l_clob_all := l_clob_all||chr(10)||'/';
-
+  l_clob_all := l_clob_all||NL;
+  l_clob_all := l_clob_all||'end;'||NL;
+ -- l_clob_all := l_clob_all||'x';
+  
   ---------------------------------------
   -- Close cursor
   ---------------------------------------
   dbms_sql.close_cursor(l_cur);
 
-  return l_clob_all;
+  l_clob_all := l_clob_all||'/'||NL;
+  return trim(l_clob_all);
 end;
 /
