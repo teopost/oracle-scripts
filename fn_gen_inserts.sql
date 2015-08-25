@@ -307,9 +307,9 @@ begin
     for i in 1..l_rec_tab.count
     loop
       if i = 1 then
-        l_clob_all := l_clob_all||'     '||l_rec_tab(i).col_name||NL;
+        l_clob_all := l_clob_all||'     '||'"'||l_rec_tab(i).col_name||'"'||NL;
       else  
-        l_clob_all := l_clob_all||'    ,'||l_rec_tab(i).col_name||NL;
+        l_clob_all := l_clob_all||'    ,'||'"'||l_rec_tab(i).col_name||'"'||NL;
       end if;  
     end loop;    
 
