@@ -163,6 +163,7 @@ begin
   
   */
   l_clob_all := l_clob_all||NL||
+            '  null;'||NL||
             '  -- start generation of records'||NL||
             '  '||l_line||NL;
 
