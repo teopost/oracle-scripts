@@ -1,3 +1,11 @@
+/*
+How to execute: 
+
+set serveroutput on size 1000000 format wrapped
+select find_in_schema('RBPRODSTG') from dual;
+
+*/
+
 create or replace function find_in_schema(val varchar2) 
 return varchar2 is
   v_old_table user_tab_columns.table_name%type;
